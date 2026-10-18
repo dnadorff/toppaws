@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Top Paws</title>
+<meta name="description" content="Internet-famous animals head-to-head card game for 1 to 5 players. Works offline.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Top Paws"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#E6F0EC" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0E1714" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>
+/* Top Paws. Layout: one phone-width column. Sticky top bar, a seat strip, then one big trading card with its seven stats as tap targets. */
+:root{
+  --bg:#E6F0EC; --surface:#FFFFFF; --ink:#14302A; --muted:#536B64; --line:#C5D6CF;
+  --accent:#C2185B; --accent-ink:#FFFFFF; --good:#1E7A4F; --warn:#9A5B00; --focus:#1F6FEB;
+  --card:#FCFBF8; --card-ink:#14302A;
+  --f-pets:#C2410C; --f-zoo:#0F6E8C; --f-wild:#2F6B2F; --f-science:#6A2BC9;
+  --f-pioneers:#7A5A2B; --f-behavior:#2E6B30; --f-dev:#B4400B; --f-clinical:#1D4FC4; --f-social:#9B1652;
+  --f-cognitive:#6A2BC9; --f-bio:#0E6F67; --f-io:#56651A; --f-personality:#8F5A07;
+  --font-display:ui-serif,"New York","Iowan Old Style",Georgia,serif;
+  --font-body:-apple-system,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1714; --surface:#17241F; --ink:#E9F3EF; --muted:#9FB4AC; --line:#2C4038;
+    --accent:#FF6FA5; --accent-ink:#1A0E06; --good:#4CC28C; --warn:#E5AE4E; --focus:#7AB4FF;
+    --card:#1D2B26; --card-ink:#E9F3EF;
+    --f-pets:#F28A50; --f-zoo:#4FC1E0; --f-wild:#7CC67C; --f-science:#B48CFF;
+    --f-pioneers:#C49A5C; --f-behavior:#6DBA6F; --f-dev:#F08A4B; --f-clinical:#7FA4FF; --f-social:#F06BA8;
+    --f-cognitive:#B48CFF; --f-bio:#4CC9BC; --f-io:#B5C55A; --f-personality:#E0AE4A;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.45;
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.app{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-bottom:28px}
+h1,h2,h3{font-family:var(--font-display);margin:0;line-height:1.1;text-wrap:balance}
+h1{font-size:2.5rem;font-weight:700}
+h2{font-size:1.45rem;font-weight:700}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:.88rem}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+[tabindex="-1"]:focus{outline:none}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:10px 8px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--font-display);font-weight:700;font-size:1.25rem;display:flex;align-items:center;gap:8px}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-size:1rem}
+.meta{font-size:.85rem;color:var(--muted);text-align:center;flex:1;min-width:0}
+.pillbtn{font:inherit;font-weight:700;font-size:.9rem;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+
+.btn{font:inherit;font-weight:700;font-size:1.02rem;border-radius:14px;padding:13px 16px;cursor:pointer;width:100%;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);text-align:center}
+.btn-primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn-accent{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn small{display:block;font-weight:400;font-size:.85rem;opacity:.85;margin-top:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 140px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
+label{font-weight:700;font-size:.92rem}
+input[type=text],select{font:inherit;font-size:1rem;padding:9px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.seatrow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.seatrow .field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.xbtn{font:inherit;font-weight:700;width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:12px;border:1.5px solid var(--line)}
+.seg button{font:inherit;font-weight:700;padding:9px 6px;border:0;border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.hero{padding-block:18px 4px;display:flex;flex-direction:column;gap:8px}
+.hero .tag{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem;color:var(--accent)}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;letter-spacing:.12em;text-align:center;padding:10px;border-radius:12px;background:var(--bg);border:2px dashed var(--line)}
+
+/* seat strip */
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
+.chip{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:6px 8px;min-width:0;display:flex;flex-direction:column;gap:1px}
+.chip.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.chip.out{opacity:.55}
+.chip .nm{font-weight:700;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .ct{font-family:var(--font-display);font-size:1.3rem;font-weight:700;line-height:1}
+.chip .sub{font-size:.74rem;color:var(--muted)}
+.potline{font-size:.85rem;color:var(--muted);text-align:center}
+
+.callbar{border-radius:14px;padding:10px 12px;background:var(--surface);border:1.5px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.callbar b{font-family:var(--font-display);font-size:1.2rem}
+
+/* the trading card */
+.tcard{--fc:var(--f-clinical);background:var(--card);color:var(--card-ink);border-radius:20px;border:3px solid var(--fc);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 24px -16px rgba(0,0,0,.6)}
+.tcard .head{display:grid;grid-template-columns:96px 1fr;gap:12px;padding:12px;align-items:center;background:color-mix(in srgb,var(--fc) 14%,var(--card))}
+.portrait{width:96px;height:96px;border-radius:14px;object-fit:cover;border:2px solid var(--fc);background:var(--fc)}
+.initials{width:96px;height:96px;border-radius:14px;display:grid;place-items:center;background:var(--fc);color:#fff;font-family:var(--font-display);font-size:2.1rem;font-weight:700;letter-spacing:.02em}
+.tcard .nm{font-family:var(--font-display);font-size:1.35rem;font-weight:700;line-height:1.1}
+.fieldtag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fc);margin-top:4px}
+.tcard .yrs{font-size:.85rem;color:var(--muted)}
+.landmark{padding:8px 12px;font-size:.9rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.landmark b{font-variant-numeric:tabular-nums}
+.stats{display:flex;flex-direction:column}
+.stat{font:inherit;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:inherit;text-align:left;min-height:48px}
+.stat:last-child{border-bottom:0}
+button.stat{cursor:pointer}
+button.stat:hover,button.stat:active{background:color-mix(in srgb,var(--fc) 12%,transparent)}
+.stat .lab{font-weight:700;font-size:.98rem}
+.stat .hint{display:block;font-weight:400;font-size:.76rem;color:var(--muted)}
+.stat .val{font-family:var(--font-display);font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums;min-width:3.2ch;text-align:right}
+.stat.hit{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.fact{padding:10px 12px;font-size:.86rem;color:var(--muted);border-top:1px solid var(--line);font-style:italic}
+.catlist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* reveal */
+.rev{display:flex;flex-direction:column;gap:8px}
+.revrow{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-left:6px solid var(--fc);border-radius:12px;padding:8px}
+.revrow.win{border-color:var(--good);border-left-color:var(--fc);box-shadow:0 0 0 2px var(--good)}
+.revrow .portrait,.revrow .initials{width:52px;height:52px;border-radius:10px;font-size:1.1rem}
+.revrow .who{font-size:.8rem;color:var(--muted)}
+.revrow .cn{font-weight:700;line-height:1.2}
+.revrow .v{font-family:var(--font-display);font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1.5px solid currentColor}
+.badge.win{color:var(--good)} .badge.tie{color:var(--warn)}
+.banner{background:var(--ink);color:var(--bg);border-radius:16px;padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.banner .big{font-family:var(--font-display);font-size:1.6rem;font-weight:700;line-height:1.15}
+.checkcode{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.2rem;letter-spacing:.1em}
+
+/* gallery */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.mini{font:inherit;color:inherit;text-align:left;cursor:pointer;background:var(--surface);border:1.5px solid var(--line);border-left:6px solid var(--fc);border-radius:12px;padding:8px;display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;min-width:0}
+.mini .portrait,.mini .initials{width:44px;height:44px;border-radius:9px;font-size:1rem;border-width:1px}
+.mini .cn{font-weight:700;font-size:.88rem;line-height:1.2}
+.mini .fl{font-size:.72rem;color:var(--muted)}
+dialog{border:0;border-radius:18px;padding:0;background:var(--bg);color:var(--ink);width:min(94vw,520px);max-height:88vh}
+dialog::backdrop{background:rgba(8,10,18,.6)}
+.dlg{padding:14px;display:flex;flex-direction:column;gap:12px;max-height:88vh;overflow:auto}
+.dlg ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.credits li{font-size:.82rem}
+@media (prefers-reduced-motion:no-preference){.tcard.deal{animation:deal .3s ease-out}}
+@keyframes deal{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+
+.emojiart{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-size:3.6rem;background:color-mix(in srgb,var(--fc) 22%,var(--card));line-height:1}
+.revrow .emojiart,.mini .emojiart{font-size:1.8rem}
+</style></head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark" aria-hidden="true">🐾</span><span>Top Paws</span></div>
+    <div class="meta num" id="meta"></div>
+    <button class="pillbtn" id="menuBtn" type="button">Menu</button>
+  </header>
+  <div class="sr" role="status" aria-live="polite" id="live"></div>
+  <main id="view" class="stack"></main>
+
+  <dialog id="menu" aria-labelledby="menuTitle">
+    <div class="dlg" id="menuBody"></div>
+  </dialog>
+  <dialog id="cardDlg" aria-label="Card details">
+    <div class="dlg" id="cardDlgBody"></div>
+  </dialog>
+</div>
+<script>
+const CARDS = [{"id": 0, "name": "Grumpy Cat", "field": "Pets", "species": "Mixed-breed cat", "emoji": "🐈", "famous": "The permanent frown behind a thousand memes", "s": [15, 10, 3.6, 23, 920, 49, 81]}, {"id": 1, "name": "Maru", "field": "Pets", "species": "Scottish Fold cat", "emoji": "🐱", "famous": "Squeezing into boxes. Guinness named him the most-viewed animal on YouTube", "s": [15, 10, 6.5, 41, 785, 21, 103]}, {"id": 2, "name": "Lil Bub", "field": "Pets", "species": "Cat", "emoji": "🐱", "famous": "A forever-kitten face and extra toes", "s": [15, 10, 8.2, 19, 560, 12, 62]}, {"id": 3, "name": "Keyboard Cat", "field": "Pets", "species": "Cat", "emoji": "🐈", "famous": "\"Play him off, Keyboard Cat\"", "s": [15, 10, 4.3, 50, 755, 25, 108]}, {"id": 4, "name": "Nala Cat", "field": "Pets", "species": "Siamese-tabby cat", "emoji": "🐱", "famous": "Shelter cat turned Guinness record holder for most-followed cat on Instagram", "s": [15, 10, 7.0, 31, 730, 23, 93]}, {"id": 5, "name": "Smudge", "field": "Pets", "species": "Cat", "emoji": "🐈", "famous": "The cat at the dinner table in the \"woman yelling at a cat\" meme", "s": [15, 10, 5.2, 45, 685, 37, 81]}, {"id": 6, "name": "Big Floppa", "field": "Pets", "species": "Caracal", "emoji": "🐈", "famous": "The Russian caracal with the unforgettable stare", "s": [14, 35, 4.3, 47, 670, 38, 93]}, {"id": 7, "name": "Doge (Kabosu)", "field": "Pets", "species": "Shiba Inu", "emoji": "🐕", "famous": "\"Such wow.\" Her photo inspired Dogecoin", "s": [14, 22, 6.0, 26, 970, 27, 103]}, {"id": 8, "name": "Cheems (Balltze)", "field": "Pets", "species": "Shiba Inu", "emoji": "🐕", "famous": "The Shiba behind the \"bonk\" meme", "s": [14, 22, 5.7, 31, 710, 19, 69]}, {"id": 9, "name": "Boo", "field": "Pets", "species": "Pomeranian", "emoji": "🐶", "famous": "Once called the world's cutest dog", "s": [14, 6, 9.3, 14, 360, 5, 81]}, {"id": 10, "name": "Doug the Pug", "field": "Pets", "species": "Pug", "emoji": "🐶", "famous": "Dressing up as celebrities", "s": [13, 16, 6.5, 38, 440, 22, 103]}, {"id": 11, "name": "Tuna", "field": "Pets", "species": "Chiweenie", "emoji": "🐕", "famous": "The most famous overbite on Instagram", "s": [15, 10, 6.2, 35, 290, 36, 93]}, {"id": 12, "name": "Bunny", "field": "Pets", "species": "Sheepadoodle", "emoji": "🐩", "famous": "\"Talking\" with word buttons", "s": [13, 65, 5.7, 41, 495, 28, 131]}, {"id": 13, "name": "Chaser", "field": "Science Stars", "species": "Border collie", "emoji": "🐕", "famous": "Learned the names of more than 1,000 toys", "s": [13, 40, 4.3, 31, 80, 15, 156]}, {"id": 14, "name": "Moo Deng", "field": "Zoo Stars", "species": "Pygmy hippo", "emoji": "🦛", "famous": "Thailand's bouncy, bitey baby hippo", "s": [40, 500, 7.2, 59, 840, 43, 50]}, {"id": 15, "name": "Fiona", "field": "Zoo Stars", "species": "Nile hippo", "emoji": "🦛", "famous": "Born premature at the Cincinnati Zoo, then thrived", "s": [45, 3000, 6.8, 38, 410, 19, 93]}, {"id": 16, "name": "Pesto", "field": "Zoo Stars", "species": "King penguin", "emoji": "🐧", "famous": "A penguin chick bigger than both parents", "s": [25, 30, 7.7, 23, 495, 15, 69]}, {"id": 17, "name": "Punch", "field": "Zoo Stars", "species": "Japanese macaque", "emoji": "🐒", "famous": "Hand-raised with a plush orangutan for comfort", "s": [27, 22, 7.4, 26, 615, 12, 114]}, {"id": 18, "name": "Hua Hua", "field": "Zoo Stars", "species": "Giant panda", "emoji": "🐼", "famous": "China's beloved \"rice ball\" panda", "s": [25, 220, 8.7, 14, 440, 5, 69]}, {"id": 19, "name": "Knut", "field": "Zoo Stars", "species": "Polar bear", "emoji": "🐻‍❄️", "famous": "Berlin's hand-raised polar bear cub", "s": [25, 1000, 7.7, 35, 290, 19, 103]}, {"id": 20, "name": "April", "field": "Zoo Stars", "species": "Giraffe", "emoji": "🦒", "famous": "Her pregnancy livestream drew more than 30 million viewers", "s": [25, 1800, 4.8, 6, 560, 12, 93]}, {"id": 21, "name": "Flaco", "field": "Wild Ones", "species": "Eurasian eagle-owl", "emoji": "🦉", "famous": "Escaped his zoo and lived free in Manhattan for a year", "s": [20, 6, 5.2, 53, 410, 32, 114]}, {"id": 22, "name": "Snowball", "field": "Science Stars", "species": "Sulphur-crested cockatoo", "emoji": "🦜", "famous": "Dances to the beat, and scientists have studied it", "s": [40, 2, 5.2, 55, 495, 25, 124]}, {"id": 23, "name": "Alex", "field": "Science Stars", "species": "African grey parrot", "emoji": "🦜", "famous": "Irene Pepperberg's talking, counting parrot", "s": [40, 1, 3.6, 26, 30, 31, 143]}, {"id": 24, "name": "Inky", "field": "Wild Ones", "species": "Octopus", "emoji": "🐙", "famous": "Escaped a New Zealand aquarium through a drain to the sea", "s": [2, 6, 3.1, 57, 360, 28, 138]}, {"id": 25, "name": "Pizza Rat", "field": "Wild Ones", "species": "Brown rat", "emoji": "🐀", "famous": "Hauling a slice of pizza down subway stairs", "s": [2, 1, 1.7, 52, 840, 34, 110]}, {"id": 26, "name": "Tiny Hamster", "field": "Pets", "species": "Hamster", "emoji": "🐹", "famous": "Eating tiny burritos", "s": [2, 0.3, 9.7, 19, 560, 5, 50]}, {"id": 27, "name": "Jonathan", "field": "Wild Ones", "species": "Seychelles giant tortoise", "emoji": "🐢", "famous": "About 194 years old and still grazing", "s": [150, 450, 2.6, 2, 215, 30, 81]}, {"id": 28, "name": "Esther", "field": "Pets", "species": "Pig", "emoji": "🐖", "famous": "Sold as a \"micro pig,\" she grew to about 600 pounds", "s": [18, 600, 5.7, 45, 215, 22, 119]}, {"id": 29, "name": "MPR Raccoon", "field": "Wild Ones", "species": "Raccoon", "emoji": "🦝", "famous": "Climbed a St. Paul skyscraper while the internet watched", "s": [3, 15, 3.6, 65, 615, 31, 119]}, {"id": 30, "name": "The Runaway Llamas", "field": "Wild Ones", "species": "Llama", "emoji": "🦙", "famous": "The great Arizona llama chase", "s": [20, 350, 4.3, 73, 650, 34, 81]}, {"id": 31, "name": "Hvaldimir", "field": "Wild Ones", "species": "Beluga whale", "emoji": "🐋", "famous": "The friendly \"spy whale\" found wearing a harness", "s": [45, 2800, 5.2, 49, 495, 19, 124]}, {"id": 32, "name": "Bear 747", "field": "Wild Ones", "species": "Brown bear", "emoji": "🐻", "famous": "Fat Bear Week champion", "s": [25, 1000, 3.1, 31, 560, 25, 93]}, {"id": 33, "name": "Canuck", "field": "Wild Ones", "species": "Crow", "emoji": "🐦‍⬛", "famous": "Vancouver crow who grabbed a knife at a crime scene", "s": [8, 1, 2.3, 61, 360, 41, 134]}, {"id": 34, "name": "Deep Blue", "field": "Wild Ones", "species": "Great white shark", "emoji": "🦈", "famous": "One of the largest great white sharks ever filmed", "s": [70, 4500, 1.3, 45, 140, 39, 81]}, {"id": 35, "name": "Otter 841", "field": "Wild Ones", "species": "Sea otter", "emoji": "🦦", "famous": "Steals surfboards from surfers in Santa Cruz", "s": [18, 50, 6.0, 69, 615, 46, 114]}, {"id": 36, "name": "Juniper", "field": "Pets", "species": "Red fox", "emoji": "🦊", "famous": "Instagram's sunny pet fox", "s": [12, 12, 6.8, 41, 290, 25, 103]}, {"id": 37, "name": "Mr. Pokee", "field": "Pets", "species": "African pygmy hedgehog", "emoji": "🦔", "famous": "Instagram's \"happiest hedgehog\"", "s": [5, 1, 8.2, 14, 215, 15, 50]}, {"id": 38, "name": "Punxsutawney Phil", "field": "Wild Ones", "species": "Groundhog", "emoji": "🦫", "famous": "America's official weather forecaster", "s": [6, 10, 4.8, 38, 495, 34, 128]}, {"id": 39, "name": "Koko", "field": "Science Stars", "species": "Western lowland gorilla", "emoji": "🦍", "famous": "Learned sign language and adopted a pet kitten", "s": [40, 250, 4.3, 31, 360, 27, 150]}];
+// Top Paws rules engine (same rules as Top Shrinks). Pure functions, deterministic from a seed, so every phone in mirror mode computes the same game.
+const DECK_VERSION = 102;
+const CATS = [
+  { key: 'lifespan', label: 'Lifespan', short: 'Lifespan', hint: 'Typical for the species, in years', low: false, unit: ' yrs' },
+  { key: 'weight', label: 'Weight', short: 'Weight', hint: 'Typical adult, in pounds', low: false, unit: ' lb' },
+  { key: 'cute', label: 'Cuteness', short: 'Cute', hint: 'Aww factor', low: false, unit: '' },
+  { key: 'chaos', label: 'Chaos Energy', short: 'Chaos', hint: 'Chaos level. Mischief, escapes, and mayhem', low: false, unit: '' },
+  { key: 'meme', label: 'Meme Power', short: 'Meme', hint: 'Meme points earned across the internet', low: false, unit: '' },
+  { key: 'attitude', label: 'Attitude', short: 'Attitude', hint: 'Side-eye score. Sass and swagger', low: false, unit: '' },
+  { key: 'brains', label: 'Brains', short: 'Brains', hint: 'Brain points for clever problem-solving', low: false, unit: '' },
+];
+const LEVELS = ['human', 'easy', 'normal', 'sharp'];
+const MAX_ROUNDS = 400;
+const LENGTHS = [30, 15, 50, 0]; // rounds; 0 = play until one player has every card
+const roundLimit = cfg => LENGTHS[cfg.len || 0] || MAX_ROUNDS;
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+// value where higher is always better (Vintage flipped)
+function score(cardId, cat) { const v = CARDS[cardId].s[cat]; return CATS[cat].low ? -v : v; }
+
+function newGame(cfg) {
+  // cfg: { seed, seats: [level strings], quick: bool }
+  const rnd = mulberry32(cfg.seed);
+  const ids = CARDS.map(c => c.id);
+  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  const deck = cfg.quick ? ids.slice(0, 20) : ids;
+  const n = cfg.seats.length, per = Math.floor(deck.length / n);
+  const hands = Array.from({ length: n }, () => []);
+  for (let k = 0; k < per * n; k++) hands[k % n].push(deck[k]);
+  const pot = deck.slice(per * n);
+  return { cfg, hands, pot, chooser: cfg.seed % n, round: 1, over: false, winners: [], last: null, hist: [], capped: false };
+}
+
+const active = st => st.hands.map((h, i) => h.length ? i : -1).filter(i => i >= 0);
+
+function play(st, cat) {
+  if (st.over) return st;
+  const snap = JSON.stringify({ hands: st.hands, pot: st.pot, chooser: st.chooser, round: st.round, over: st.over, winners: st.winners, last: st.last, capped: st.capped });
+  st.hist.push(snap); if (st.hist.length > 40) st.hist.shift();
+  const players = active(st);
+  const played = players.map(i => ({ seat: i, card: st.hands[i].shift() }));
+  let best = -Infinity; for (const p of played) best = Math.max(best, score(p.card, cat));
+  const top = played.filter(p => score(p.card, cat) === best).map(p => p.seat);
+  const chooser = st.chooser;
+  let winner = null;
+  if (top.length === 1) {
+    winner = top[0];
+    var taken = played.length + st.pot.length;
+    const mine = played.find(p => p.seat === winner).card;
+    st.hands[winner].push(mine, ...played.filter(p => p.seat !== winner).map(p => p.card), ...st.pot);
+    st.pot = [];
+  } else {
+    st.pot.push(...played.map(p => p.card));
+  }
+  st.last = { round: st.round, cat, chooser, played, top, winner, potSize: st.pot.length, taken: winner === null ? 0 : taken };
+  st.round++;
+  const left = active(st);
+  { // the caller moves one seat clockwise every round, skipping anyone who is out
+    const n = st.hands.length;
+    for (let k = 1; k <= n; k++) { const c = (chooser + k) % n; if (st.hands[c].length) { st.chooser = c; break; } }
+  }
+  if (left.length <= 1) {
+    st.over = true;
+    if (left.length === 1) { st.winners = left; st.hands[left[0]].push(...st.pot); st.pot = []; }
+    else st.winners = top; // everyone tied out on their last cards
+  } else if (st.round > roundLimit(st.cfg)) {
+    st.over = true; st.capped = true;
+    const most = Math.max(...st.hands.map(h => h.length));
+    st.winners = st.hands.map((h, i) => h.length === most ? i : -1).filter(i => i >= 0);
+  }
+  return st;
+}
+
+function undo(st) {
+  if (!st.hist.length) return false;
+  Object.assign(st, JSON.parse(st.hist.pop()));
+  return true;
+}
+
+// Robot picks only from its own card and public knowledge of the deck. It never sees other players' cards.
+function robotChoice(st) {
+  const seat = st.chooser, level = st.cfg.seats[seat], card = st.hands[seat][0];
+  const rnd = mulberry32(hash32(st.cfg.seed + ':' + st.round + ':' + seat));
+  if (level === 'easy') return Math.floor(rnd() * CATS.length);
+  // percentile of this card in each category across the whole deck
+  const pct = CATS.map((_, k) => {
+    const mine = score(card, k); let below = 0, eq = 0;
+    for (const c of CARDS) { const v = score(c.id, k); if (v < mine) below++; else if (v === mine) eq++; }
+    return (below + (eq - 1) / 2) / (CARDS.length - 1);
+  });
+  const order = pct.map((p, k) => [p, k]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  if (level === 'normal') return rnd() < 0.7 ? order[0][1] : order[1][1];
+  return order[0][1]; // sharp
+}
+
+// short code every phone shows after each round, to catch mis-taps
+function checkCode(st) {
+  const h = hash32(JSON.stringify([st.hands, st.pot, st.chooser]));
+  const A = 'ABCDEFGHJKMNPQRSTVWXYZ', D = '23456789';
+  return A[h % A.length] + D[(h >>> 8) % D.length];
+}
+
+// Game code: seed (20 bits) | seats-2 (2 bits) | quick (1 bit) | length (2 bits) | 5 x level (2 bits) + checksum char. Crockford base32.
+const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function encodeCode(cfg) {
+  let bits = BigInt(cfg.seed & 0xFFFFF);
+  bits = (bits << 2n) | BigInt(cfg.seats.length - 2);
+  bits = (bits << 1n) | (cfg.quick ? 1n : 0n);
+  bits = (bits << 2n) | BigInt(cfg.len || 0);
+  for (let i = 0; i < 5; i++) bits = (bits << 2n) | BigInt(Math.max(0, LEVELS.indexOf(cfg.seats[i] || 'human')));
+  let s = '';
+  for (let i = 0; i < 7; i++) { s = B32[Number(bits & 31n)] + s; bits >>= 5n; }
+  let sum = DECK_VERSION; for (let i = 0; i < 7; i++) sum += B32.indexOf(s[i]) * (i + 3);
+  s += B32[sum % 32];
+  return s.slice(0, 4) + '-' + s.slice(4);
+}
+function decodeCode(code) {
+  const s = String(code || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1').replace(/U/g, 'V');
+  if (s.length !== 8) return null;
+  for (const ch of s) if (B32.indexOf(ch) < 0) return null;
+  let sum = DECK_VERSION; for (let i = 0; i < 7; i++) sum += B32.indexOf(s[i]) * (i + 3);
+  if (B32[sum % 32] !== s[7]) return null;
+  let bits = 0n; for (let i = 0; i < 7; i++) bits = (bits << 5n) | BigInt(B32.indexOf(s[i]));
+  const lv = []; for (let i = 0; i < 5; i++) { lv.unshift(LEVELS[Number(bits & 3n)]); bits >>= 2n; }
+  const len = Number(bits & 3n); bits >>= 2n;
+  const quick = (bits & 1n) === 1n; bits >>= 1n;
+  const n = Number(bits & 3n) + 2; bits >>= 2n;
+  const seed = Number(bits & 0xFFFFFn);
+  return { seed, seats: lv.slice(0, n), quick, len };
+}
+
+const Engine = { LENGTHS, roundLimit, CATS, LEVELS, newGame, play, undo, robotChoice, checkCode, encodeCode, decodeCode, active, score, mulberry32 };
+if (typeof module !== 'undefined') module.exports = Engine;
+const $ = id => document.getElementById(id);
+const KEY = 'toppaws:v1';
+const FIELD_VAR = { 'Pets': '--f-pets', 'Zoo Stars': '--f-zoo', 'Wild Ones': '--f-wild', 'Science Stars': '--f-science' };
+const FIELD_NAME = {};
+const ROBOT_NAMES = ['Robo-Doge', 'Grumpy Bot', 'Mecha Moo Deng', 'Otterbot 842', 'Pizza Bot'];
+const LEVEL_LABEL = { human: 'Person', easy: 'Robot (Easy)', normal: 'Robot (Normal)', sharp: 'Robot (Sharp)' };
+
+let G = null;        // current game: { mode, st, names, seat, phase }
+let draft = null;    // setup screen draft
+let view = 'home';   // which non-game screen is showing
+let joinCfg = null;
+
+/* ---------- storage ---------- */
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ G, draft })); } catch (e) {} }
+function load() { try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+
+/* ---------- helpers ---------- */
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'style') e.setAttribute('style', v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+}
+const fc = card => `--fc:var(${FIELD_VAR[card.field]})`;
+const initials = n => { const w = n.replace(/\./g, '').split(/\s+/); return (w[0][0] + w[w.length - 1][0]).toUpperCase(); };
+function portrait(card) {
+  if (card.emoji) return el('div', { class: 'initials emojiart', role: 'img', 'aria-label': 'Picture of a ' + card.species.toLowerCase() }, card.emoji);
+  return card.img ? el('img', { class: 'portrait', src: card.img, alt: 'Photo of ' + card.name })
+    : el('div', { class: 'initials', role: 'img', 'aria-label': card.name + ' (no free photo available)' }, initials(card.name));
+}
+const life = c => c.died ? `${c.born} to ${c.died}` : `Born ${c.born}`;
+const fmt = (k, v) => CATS[k].key === 'longevity' ? `${v}` : `${v}`;
+function announce(t) { const l = $('live'); l.textContent = ''; setTimeout(() => { l.textContent = t; }, 40); }
+function nameOf(i) { return G.names[i] || `Player ${i + 1}`; }
+function plural(n, w) { return `${n} ${w}${n === 1 ? '' : 's'}`; }
+function randSeed() { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % 1048576; } catch (e) { return Math.floor(Math.random() * 1048576); } }
+function focusTop() { window.scrollTo({ top: 0 }); const h = $('view').querySelector('[tabindex="-1"]'); if (h) h.focus({ preventScroll: true }); }
+
+/* ---------- the card ---------- */
+function cardView(id, opts = {}) {
+  const c = CARDS[id];
+  const statEls = CATS.map((cat, k) => {
+    const inner = [el('span', null, el('span', { class: 'lab' }, cat.label), el('span', { class: 'hint' }, cat.hint)),
+      el('span', { class: 'val' }, fmt(k, c.s[k]))];
+    const cls = 'stat' + (opts.hit === k ? ' hit' : '');
+    return opts.pick ? el('button', { class: cls, type: 'button', 'aria-label': `${cat.label}, ${c.s[k]}${cat.low ? ', earliest wins' : ''}. Call this category.`, onclick: () => opts.pick(k) }, inner)
+      : el('div', { class: cls }, inner);
+  });
+  return el('article', { class: 'tcard' + (opts.deal ? ' deal' : ''), style: fc(c), 'aria-label': c.name + ' card' },
+    el('div', { class: 'head' }, portrait(c), el('div', null,
+      el('div', { class: 'nm' }, c.name), el('div', { class: 'fieldtag' }, FIELD_NAME[c.field] || c.field), el('div', { class: 'yrs' }, c.species))),
+    el('div', { class: 'landmark' }, el('b', null, 'Famous for: '), c.famous),
+    el('div', { class: 'stats' }, statEls),
+    opts.fact === false || !c.fact ? null : el('p', { class: 'fact' }, c.fact));
+}
+
+/* ---------- game flow ---------- */
+const isRobot = i => G.st.cfg.seats[i] !== 'human';
+const humans = () => G.st.cfg.seats.map((t, i) => t === 'human' ? i : -1).filter(i => i >= 0);
+const humansWithCards = () => humans().filter(i => G.st.hands[i].length);
+function decide() {
+  const st = G.st;
+  if (st.over) return 'over';
+  if (G.mode === 'mirror') return 'turn';
+  if (!isRobot(st.chooser) && humansWithCards().length > 1) return 'pass';
+  return 'turn';
+}
+function startGame(mode, cfg, names, seat) {
+  G = { mode, st: Engine.newGame(cfg), names, seat: seat || 0, phase: 'turn' };
+  G.phase = decide(); keepAwake(); render();
+}
+function doPlay(cat) {
+  Engine.play(G.st, cat); G.phase = 'reveal'; render();
+}
+function finishRobots() { // nobody human left with cards: play it out
+  let guard = 0;
+  while (!G.st.over && guard++ < 2000) Engine.play(G.st, Engine.robotChoice(G.st));
+  G.phase = 'over'; render();
+}
+let wake = null;
+async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && G && !G.st.over) keepAwake(); });
+
+/* ---------- render ---------- */
+function render() {
+  save();
+  const v = $('view'); v.innerHTML = '';
+  if (G) {
+    $('meta').textContent = G.st.over ? 'Game over' : `Round ${G.st.round}` + (Engine.LENGTHS[G.st.cfg.len || 0] ? ` of ${Engine.roundLimit(G.st.cfg)}` : '') + (G.mode === 'mirror' ? ' · ' + Engine.encodeCode(G.st.cfg) : '');
+    if (G.phase === 'pass') renderPass(v); else if (G.phase === 'turn') renderTurn(v);
+    else if (G.phase === 'reveal') renderReveal(v); else renderOver(v);
+  } else {
+    $('meta').textContent = '';
+    if (view === 'setup') renderSetup(v, 'local'); else if (view === 'host') renderSetup(v, 'host');
+    else if (view === 'hostcode') renderHostCode(v); else if (view === 'join') renderJoin(v);
+    else if (view === 'deck') renderDeck(v); else renderHome(v);
+  }
+  focusTop();
+}
+
+function strip() {
+  const st = G.st;
+  const s = el('div', { class: 'strip' }, st.hands.map((h, i) =>
+    el('div', { class: 'chip' + (i === st.chooser && !st.over ? ' on' : '') + (h.length ? '' : ' out') },
+      el('div', { class: 'nm' }, nameOf(i) + (G.mode === 'mirror' && i === G.seat ? ' (you)' : '')),
+      el('div', { class: 'ct num' }, h.length),
+      el('div', { class: 'sub' }, h.length ? (i === st.chooser && !st.over ? 'Calling' : (isRobot(i) ? 'Robot' : 'cards')) : 'Out'))));
+  const out = [s];
+  if (st.pot.length) out.push(el('p', { class: 'potline' }, `${plural(st.pot.length, 'card')} waiting in the middle`));
+  return out;
+}
+
+function renderHome(v) {
+  v.append(el('section', { class: 'hero' },
+    el('p', { class: 'tag' }, 'Internet animals, head to head'),
+    el('h1', { tabindex: '-1' }, 'Top Paws'),
+    el('p', { class: 'muted' }, '40 internet-famous animals, seven categories, and one rule: call the category your card wins. Every card can beat every other card in at least one category.')));
+  v.append(el('div', { class: 'stack' },
+    el('button', { class: 'btn btn-accent', type: 'button', onclick: () => { view = 'setup'; draft = draft || defaultDraft(); render(); } }, 'Play on this phone', el('small', null, 'Pass the phone around, or play against robots')),
+    el('button', { class: 'btn btn-primary', type: 'button', onclick: () => { view = 'host'; draft = draft || defaultDraft(); render(); } }, 'Host a mirror game', el('small', null, 'Everyone plays on their own phone, no internet needed')),
+    el('button', { class: 'btn', type: 'button', onclick: () => { view = 'join'; joinCfg = null; render(); } }, 'Join a mirror game', el('small', null, 'Enter the code from the host\'s phone')),
+    el('button', { class: 'btn', type: 'button', onclick: () => { view = 'deck'; render(); } }, 'Browse the deck')));
+}
+
+function defaultDraft() { return { seats: [{ name: '', type: 'human' }, { name: '', type: 'human' }], quick: false, len: 0 }; }
+function renderSetup(v, kind) {
+  const host = kind === 'host';
+  v.append(el('h2', { tabindex: '-1' }, host ? 'Host a mirror game' : 'Play on this phone'));
+  v.append(el('p', { class: 'muted small' }, host
+    ? 'Set up the seats in the order you are sitting, going around the table. You are Seat 1. Robots in a mirror game play themselves on every phone.'
+    : 'Add 2 to 5 players. Mix people and robots however you like. People pass the phone when it is their turn to call.'));
+  if (host) draft.seats[0].type = 'human';
+  const p = el('div', { class: 'panel' });
+  draft.seats.forEach((s, i) => {
+    const nameIn = el('input', { type: 'text', id: 'seatname' + i, maxlength: '18', autocomplete: 'off', placeholder: s.type === 'human' ? (host && i === 0 ? 'Your name' : `Player ${i + 1}`) : ROBOT_NAMES[i], value: s.name });
+    nameIn.addEventListener('input', () => { s.name = nameIn.value; save(); });
+    const sel = el('select', { id: 'seattype' + i, disabled: host && i === 0 ? true : null },
+      Object.entries(LEVEL_LABEL).map(([k, l]) => el('option', { value: k, selected: s.type === k ? true : null }, l)));
+    sel.addEventListener('change', () => { s.type = sel.value; render(); });
+    p.append(el('div', { class: 'seatrow' },
+      el('div', { class: 'field' }, el('label', { for: 'seatname' + i }, `Seat ${i + 1}`), nameIn),
+      el('div', { class: 'field' }, el('label', { for: 'seattype' + i }, 'Who'), sel),
+      el('button', { class: 'xbtn', type: 'button', 'aria-label': `Remove seat ${i + 1}`, disabled: draft.seats.length <= 2 || (host && i === 0) ? true : null,
+        onclick: () => { draft.seats.splice(i, 1); render(); } }, '×')));
+  });
+  if (draft.seats.length < 5) p.append(el('div', { class: 'row' },
+    el('button', { class: 'btn', type: 'button', onclick: () => { draft.seats.push({ name: '', type: 'human' }); render(); } }, '+ Add a person'),
+    el('button', { class: 'btn', type: 'button', onclick: () => { draft.seats.push({ name: '', type: 'normal' }); render(); } }, '+ Add a robot')));
+  if (draft.len === undefined) draft.len = 0;
+  const LEN_LABEL = ['30 rounds', '15 rounds', '50 rounds', 'Until one player has every card'];
+  p.append(el('div', { class: 'stack', style: 'gap:6px' }, el('label', { id: 'lenLab' }, 'Game length'),
+    el('div', { class: 'seg', role: 'group', 'aria-labelledby': 'lenLab', style: 'grid-template-columns:1fr 1fr' },
+      [1, 0, 2, 3].map(i => el('button', { type: 'button', 'aria-pressed': String(draft.len === i), onclick: () => { draft.len = i; render(); } }, LEN_LABEL[i]))),
+    el('p', { class: 'small muted' }, 'When time is up, whoever holds the most cards wins.')));
+  p.append(el('div', { class: 'stack', style: 'gap:6px' }, el('label', { id: 'deckLab' }, 'Deck'),
+    el('div', { class: 'seg', role: 'group', 'aria-labelledby': 'deckLab' },
+      el('button', { type: 'button', 'aria-pressed': String(!draft.quick), onclick: () => { draft.quick = false; render(); } }, 'Full deck (40)'),
+      el('button', { type: 'button', 'aria-pressed': String(draft.quick), onclick: () => { draft.quick = true; render(); } }, 'Half deck (20)'))));
+  v.append(p);
+  const hasHuman = draft.seats.some(s => s.type === 'human');
+  v.append(el('div', { class: 'row' },
+    el('button', { class: 'btn', type: 'button', onclick: () => { view = 'home'; render(); } }, 'Back'),
+    el('button', { class: 'btn btn-accent', type: 'button', disabled: hasHuman ? null : true, onclick: () => {
+      const seats = draft.seats.map(s => s.type), names = draft.seats.map((s, i) => s.name.trim() || (s.type === 'human' ? `Player ${i + 1}` : ROBOT_NAMES[i]));
+      const cfg = { seed: randSeed(), seats, quick: draft.quick, len: draft.len || 0 };
+      if (host) { draft.pending = { cfg, names }; view = 'hostcode'; render(); }
+      else { view = 'home'; startGame('local', cfg, names, 0); }
+    } }, host ? 'Get the game code' : 'Deal the cards')));
+}
+
+function renderHostCode(v) {
+  const { cfg, names } = draft.pending;
+  v.append(el('h2', { tabindex: '-1' }, 'Your game code'));
+  v.append(el('div', { class: 'code', 'aria-label': 'Game code ' + Engine.encodeCode(cfg).split('').join(' ') }, Engine.encodeCode(cfg)));
+  v.append(el('div', { class: 'panel' },
+    el('p', null, 'Everyone else: open Top Paws, tap ', el('b', null, 'Join a mirror game'), ', enter this code, and pick your seat:'),
+    el('ul', { style: 'margin:0;padding-left:20px' }, cfg.seats.map((t, i) => el('li', null, `Seat ${i + 1}: ${names[i]}` + (t === 'human' ? (i === 0 ? ' (you)' : '') : ` · ${LEVEL_LABEL[t]}`))))),
+    el('p', { class: 'muted small' }, 'All phones deal the same cards from this code. Nothing is sent between phones, so it works with no Wi-Fi at all.'));
+  v.append(el('div', { class: 'row' },
+    el('button', { class: 'btn', type: 'button', onclick: () => { view = 'host'; render(); } }, 'Back'),
+    el('button', { class: 'btn btn-accent', type: 'button', onclick: () => { view = 'home'; startGame('mirror', cfg, names, 0); } }, 'Everyone is in. Start')));
+}
+
+function renderJoin(v) {
+  v.append(el('h2', { tabindex: '-1' }, 'Join a mirror game'));
+  const p = el('div', { class: 'panel' });
+  const inp = el('input', { type: 'text', id: 'joincode', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', placeholder: 'XXXX-XXXX', style: 'font-family:ui-monospace,Menlo,monospace;font-size:1.4rem;letter-spacing:.1em;text-align:center' });
+  const msg = el('p', { class: 'small muted', id: 'joinmsg' }, 'Type the code shown on the host\'s phone.');
+  p.append(el('label', { for: 'joincode' }, 'Game code'), inp, msg,
+    el('button', { class: 'btn btn-primary', type: 'button', onclick: () => {
+      const cfg = Engine.decodeCode(inp.value);
+      if (!cfg) { msg.textContent = 'That code does not match. Check each character with the host. Also make sure both phones have the latest version of Top Paws.'; inp.focus(); return; }
+      joinCfg = { cfg, names: cfg.seats.map((t, i) => t === 'human' ? `Player ${i + 1}` : ROBOT_NAMES[i]), seat: null }; render();
+    } }, 'Find the game'));
+  v.append(p);
+  if (joinCfg) {
+    const q = el('div', { class: 'panel' }, el('h3', null, 'Which seat are you?'),
+      el('p', { class: 'muted small' }, 'Seats go around the table starting with the host as Seat 1. You can type everyone\'s names so your screen matches the table.'));
+    joinCfg.cfg.seats.forEach((t, i) => {
+      const nameIn = el('input', { type: 'text', id: 'jname' + i, maxlength: '18', value: joinCfg.names[i], disabled: t !== 'human' ? true : null });
+      nameIn.addEventListener('input', () => { joinCfg.names[i] = nameIn.value; });
+      q.append(el('div', { class: 'seatrow', style: 'grid-template-columns:1fr auto' },
+        el('div', { class: 'field' }, el('label', { for: 'jname' + i }, `Seat ${i + 1}` + (t === 'human' ? '' : ` · ${LEVEL_LABEL[t]}`)), nameIn),
+        t === 'human' && i > 0 ? el('button', { class: 'btn' + (joinCfg.seat === i ? ' btn-accent' : ''), style: 'width:auto', type: 'button', 'aria-pressed': String(joinCfg.seat === i),
+          onclick: () => { joinCfg.seat = i; render(); } }, joinCfg.seat === i ? 'This is me' : 'Me') : el('span', { class: 'small muted' }, i === 0 ? 'Host' : 'Robot')));
+    });
+    q.append(el('button', { class: 'btn btn-accent', type: 'button', disabled: joinCfg.seat === null ? true : null, onclick: () => {
+      const names = joinCfg.names.map((n, i) => (n || '').trim() || `Player ${i + 1}`); view = 'home'; startGame('mirror', joinCfg.cfg, names, joinCfg.seat);
+    } }, 'Join the game'));
+    v.append(q);
+    setTimeout(() => { inp.value = Engine.encodeCode(joinCfg.cfg); }, 0);
+  }
+  v.append(el('button', { class: 'btn', type: 'button', onclick: () => { view = 'home'; render(); } }, 'Back'));
+}
+
+function renderPass(v) {
+  const i = G.st.chooser;
+  v.append(...strip());
+  v.append(el('section', { class: 'stack', style: 'text-align:center;padding-block:24px' },
+    el('p', { class: 'muted' }, 'Pass the phone to'),
+    el('h2', { tabindex: '-1', style: 'font-size:2.2rem' }, nameOf(i)),
+    el('p', { class: 'muted small' }, 'It is your turn to call a category. Everyone else, look away.'),
+    el('button', { class: 'btn btn-accent', type: 'button', onclick: () => { G.phase = 'turn'; render(); } }, `I'm ${nameOf(i)}. Show my card`)));
+}
+
+function renderTurn(v) {
+  const st = G.st, ch = st.chooser;
+  v.append(...strip());
+  if (isRobot(ch)) {
+    const cat = Engine.robotChoice(st);
+    const viewer = G.mode === 'mirror' ? G.seat : (humansWithCards().length === 1 ? humansWithCards()[0] : null);
+    v.append(el('div', { class: 'callbar' }, el('span', { class: 'small muted', tabindex: '-1' }, `${nameOf(ch)} is calling`), el('b', null, `${nameOf(ch)} calls ${CATS[cat].label}`),
+      CATS[cat].low ? el('span', { class: 'small muted' }, 'Earliest year wins') : null));
+    if (viewer !== null && st.hands[viewer] && st.hands[viewer].length) v.append(el('p', { class: 'small muted' }, `${nameOf(viewer)}, here is your card:`), cardView(st.hands[viewer][0], { hit: cat, deal: true }));
+    if (!humansWithCards().length) v.append(el('p', { class: 'muted' }, 'All the people are out of cards. The robots can finish without you.'),
+      el('button', { class: 'btn', type: 'button', onclick: finishRobots }, 'Skip to the result'));
+    v.append(el('button', { class: 'btn btn-accent', type: 'button', onclick: () => doPlay(cat) }, 'Reveal everyone\'s cards'));
+    announce(`${nameOf(ch)} calls ${CATS[cat].label}`);
+    return;
+  }
+  if (G.mode === 'local') {
+    v.append(el('div', { class: 'callbar' }, el('span', { class: 'small muted', tabindex: '-1' }, `${nameOf(ch)}, your call`), el('b', null, 'Tap the category you think will win')),
+      cardView(st.hands[ch][0], { pick: doPlay, deal: true }));
+    return;
+  }
+  // mirror, human caller
+  const mine = G.seat === ch;
+  v.append(el('div', { class: 'callbar' },
+    el('span', { class: 'small muted', tabindex: '-1' }, mine ? 'Your call' : `${nameOf(ch)} is calling`),
+    el('b', null, mine ? 'Say your category out loud, then tap it' : `Tap the category ${nameOf(ch)} calls`)));
+  if (st.hands[G.seat].length) v.append(cardView(st.hands[G.seat][0], { pick: doPlay, deal: true }));
+  else v.append(el('p', { class: 'muted' }, 'You are out of cards, but keep tapping the called category so your phone stays in step.'),
+    el('div', { class: 'catlist' }, CATS.map((c, k) => el('button', { class: 'btn', type: 'button', onclick: () => doPlay(k) }, c.label))));
+}
+
+function renderReveal(v) {
+  const st = G.st, L = st.last;
+  v.append(...strip());
+  const cat = CATS[L.cat];
+  v.append(el('h2', { tabindex: '-1' }, `${nameOf(L.chooser)} called ${cat.label}`));
+  if (cat.low) v.append(el('p', { class: 'small muted' }, 'Earliest year wins.'));
+  const rows = el('div', { class: 'rev' }, L.played.map(p => {
+    const c = CARDS[p.card], won = L.winner === p.seat, tied = L.winner === null && L.top.includes(p.seat);
+    return el('div', { class: 'revrow' + (won ? ' win' : ''), style: fc(c) }, portrait(c),
+      el('div', { style: 'min-width:0' }, el('div', { class: 'who' }, nameOf(p.seat)), el('div', { class: 'cn' }, c.name),
+        won ? el('span', { class: 'badge win' }, 'Wins') : tied ? el('span', { class: 'badge tie' }, 'Tied') : null),
+      el('div', { class: 'v num' }, c.s[L.cat]));
+  }));
+  v.append(rows);
+  let outcome;
+  if (L.winner !== null) outcome = `${nameOf(L.winner)} takes ${plural(L.taken, 'card')}.` + (st.over ? '' : ` Next caller: ${nameOf(st.chooser)}.`);
+  else outcome = `A tie at the top. ${plural(L.potSize, 'card')} now wait in the middle, and the next winner takes them all. ${st.over ? '' : 'Next caller: ' + nameOf(st.chooser) + '.'}`;
+  v.append(el('div', { class: 'banner' }, el('div', { class: 'big' }, outcome)));
+  const won = L.played.find(p => p.seat === L.winner);
+  if (won) v.append(el('p', { class: 'small muted' }, CARDS[won.card].name + ': ' + CARDS[won.card].famous + '.'));
+  if (G.mode === 'mirror') v.append(el('div', { class: 'panel', style: 'flex-direction:row;align-items:center;justify-content:space-between' },
+    el('span', { class: 'small' }, 'Check code. Every phone should match:'), el('span', { class: 'checkcode' }, Engine.checkCode(st))));
+  v.append(el('div', { class: 'row' },
+    el('button', { class: 'btn', type: 'button', onclick: () => { Engine.undo(st); G.phase = decide(); render(); } }, 'Undo (mis-tap)'),
+    el('button', { class: 'btn btn-accent', type: 'button', onclick: () => { G.phase = decide(); render(); } }, st.over ? 'See who won' : 'Next round')));
+  announce(outcome);
+}
+
+function renderOver(v) {
+  const st = G.st, w = st.winners;
+  const names = w.map(nameOf);
+  const big = w.length === 1 ? `${names[0]} wins!` : w.length ? `${names.join(' and ')} share the win` : 'Nobody wins';
+  v.append(el('div', { class: 'banner' }, el('div', { class: 'big', tabindex: '-1' }, big),
+    el('div', null, st.capped ? (Engine.LENGTHS[st.cfg.len || 0] ? `Time is up after ${plural(st.round - 1, 'round')}. Most cards wins.` : 'Time was called after a very long game. Most cards wins.') : `After ${plural(st.round - 1, 'round')}.`)));
+  v.append(...strip());
+  v.append(el('div', { class: 'row' },
+    el('button', { class: 'btn', type: 'button', onclick: () => { G = null; view = 'home'; render(); } }, 'Home'),
+    el('button', { class: 'btn btn-accent', type: 'button', onclick: () => {
+      const cfg = Object.assign({}, st.cfg, { seed: G.mode === 'mirror' ? (st.cfg.seed + 1) % 1048576 : randSeed() });
+      startGame(G.mode, cfg, G.names, G.seat);
+    } }, 'Play again, same players')));
+  if (G.mode === 'mirror') v.append(el('p', { class: 'small muted' }, 'In a mirror game, everyone taps "Play again" and the phones deal the same new game.'));
+  announce(big);
+}
+
+function renderDeck(v) {
+  v.append(el('h2', { tabindex: '-1' }, 'The deck'));
+  v.append(el('p', { class: 'muted small' }, 'Tap a card to see it full size.'));
+  v.append(el('div', { class: 'grid' }, CARDS.map(c => el('button', { class: 'mini', type: 'button', style: fc(c), onclick: () => openCard(c.id) },
+    portrait(c), el('span', { style: 'min-width:0' }, el('span', { class: 'cn', style: 'display:block' }, c.name), el('span', { class: 'fl' }, FIELD_NAME[c.field] || c.field))))));
+  v.append(el('button', { class: 'btn', type: 'button', onclick: () => { view = 'home'; render(); } }, 'Back'));
+}
+function openCard(id) {
+  const b = $('cardDlgBody'); b.innerHTML = '';
+  b.append(cardView(id), el('p', { class: 'small muted' }, 'The picture shows the species, not this particular animal.'),
+    el('button', { class: 'btn', type: 'button', onclick: () => $('cardDlg').close() }, 'Close'));
+  $('cardDlg').showModal();
+}
+
+/* ---------- menu ---------- */
+function openMenu(confirmQuit) {
+  const b = $('menuBody'); b.innerHTML = '';
+  b.append(el('h2', { id: 'menuTitle' }, 'How to play'),
+    el('ul', null,
+      el('li', null, 'Cards are dealt evenly. You only ever see your own top card.'),
+      el('li', null, 'The caller picks one category on their card and says it out loud.'),
+      el('li', null, 'Everyone compares that category. The highest number wins. The winner takes every card played. Then the job of caller moves one seat clockwise, so everyone gets a turn to call.'),
+      el('li', null, 'If the top cards tie, they go to the middle. Whoever wins the next round takes the middle pile too.'),
+      el('li', null, 'Run out of cards and you are out. The last player holding cards wins.'),
+      el('li', null, 'Mirror games: every phone deals the same cards from the game code. When someone calls a category, everyone taps it on their own phone. After each round all phones should show the same check code. If one does not, that phone mis-tapped and should tap Undo.'),
+      el('li', null, 'Robots only know their own card, never yours.')),
+    el('p', { class: 'small muted' }, 'Lifespan and Weight are typical values for each species. The other five categories are playful ratings, balanced so every card can beat every other card in at least one category. Pictures show the species, not the famous animal itself.'));
+  if (G && !G.st.over && G.st.hist.length) b.append(el('button', { class: 'btn', type: 'button', onclick: () => { Engine.undo(G.st); G.phase = decide(); $('menu').close(); render(); } }, 'Undo the last round'));
+  if (G) b.append(confirmQuit
+    ? el('div', { class: 'row' }, el('button', { class: 'btn btn-accent', type: 'button', onclick: () => { G = null; view = 'home'; $('menu').close(); render(); } }, 'Yes, end this game'),
+        el('button', { class: 'btn', type: 'button', onclick: () => openMenu(false) }, 'Keep playing'))
+    : el('button', { class: 'btn', type: 'button', onclick: () => openMenu(true) }, 'End this game'));
+  b.append(    el('button', { class: 'btn', type: 'button', onclick: () => $('menu').close() }, 'Close'));
+  if (!$('menu').open) $('menu').showModal();
+}
+$('menuBtn').addEventListener('click', () => openMenu(false));
+
+/* ---------- boot ---------- */
+(function boot() {
+  const s = load();
+  if (s) { draft = s.draft || null; if (s.G && s.G.st && s.G.st.cfg) G = s.G; }
+  render();
+})();
+</script>
+<script>if('serviceWorker' in navigator && location.protocol!=='file:'){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
+<p style="text-align:center;font-size:.75rem;color:var(--muted);margin:0 0 16px">Build d2103720</p>
+</body></html>
